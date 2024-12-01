@@ -1,4 +1,4 @@
-module Page.Helper.Multiselect exposing
+module Page.Helper.MultiSelect exposing
     ( Config
     , Model
     , Msg

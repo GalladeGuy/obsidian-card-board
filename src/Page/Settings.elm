@@ -37,7 +37,7 @@ import InteropPorts
 import Json.Encode as JE
 import List.Extra as LE
 import Maybe.Extra as ME
-import Page.Helper.Multiselect as MultiSelect
+import Page.Helper.MultiSelect as MultiSelect
 import SafeZipper exposing (SafeZipper)
 import Session exposing (Session, TaskCompletionSettings)
 import Settings exposing (Settings)
