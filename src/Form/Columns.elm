@@ -9,6 +9,7 @@ module Form.Columns exposing
     , safeDecoder
     , updateColumnName
     , updateCompletedColumnLimit
+    , updateCustomFilterFilterExpression
     , updateDatedColumnRangeType
     , updateDatedColumnRangeValueFrom
     , updateDatedColumnRangeValueTo
@@ -102,6 +103,11 @@ updateColumnName index newName form =
 updateCompletedColumnLimit : Int -> String -> ColumnsForm -> ColumnsForm
 updateCompletedColumnLimit index newLimit form =
     { form | columnForms = LE.updateAt index (ColumnForm.updateCompletedColumnLimit newLimit) form.columnForms }
+
+
+updateCustomFilterFilterExpression : Int -> String -> ColumnsForm -> ColumnsForm
+updateCustomFilterFilterExpression index newFilterExpression form =
+    { form | columnForms = LE.updateAt index (ColumnForm.updateCustomFilterFilterExpression newFilterExpression) form.columnForms }
 
 
 updateDatedColumnRangeType : Int -> String -> ColumnsForm -> ColumnsForm

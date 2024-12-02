@@ -6,6 +6,7 @@ module Column exposing
     , cards
     , completed
     , containsTask
+    , customFilter
     , dated
     , decoder
     , encoder
@@ -28,6 +29,7 @@ module Column exposing
 
 import Card exposing (Card)
 import Column.Completed as CompletedColumn exposing (CompletedColumn)
+import Column.CustomFilter as CustomFilterColumn exposing (CustomFilterColumn)
 import Column.Dated as DatedColumn exposing (DatedColumn)
 import Column.NamedTag as NamedTagColumn exposing (NamedTagColumn)
 import Column.OtherTags as OtherTagsColumn exposing (OtherTagsColumn)
@@ -40,6 +42,7 @@ import PlacementResult exposing (PlacementResult)
 import TaskItem exposing (TaskItem)
 import TsJson.Decode as TsDecode
 import TsJson.Encode as TsEncode
+import Html exposing (col)
 
 
 
@@ -48,6 +51,7 @@ import TsJson.Encode as TsEncode
 
 type Column
     = Completed CompletedColumn
+    | CustomFilter CustomFilterColumn
     | Dated DatedColumn
     | NamedTag NamedTagColumn
     | OtherTags OtherTagsColumn
@@ -62,6 +66,11 @@ type Column
 completed : CompletedColumn -> Column
 completed =
     Completed
+
+
+customFilter : CustomFilterColumn -> Column
+customFilter =
+    CustomFilter
 
 
 dated : DatedColumn -> Column
@@ -97,6 +106,7 @@ decoder : TsDecode.Decoder Column
 decoder =
     TsDecode.oneOf
         [ DecodeHelpers.toElmVariant "completed" Completed CompletedColumn.decoder
+        , DecodeHelpers.toElmVariant "customFilter" CustomFilter CustomFilterColumn.decoder
         , DecodeHelpers.toElmVariant "dated" Dated DatedColumn.decoder
         , DecodeHelpers.toElmVariant "namedTag" NamedTag NamedTagColumn.decoder
         , DecodeHelpers.toElmVariant "otherTags" OtherTags OtherTagsColumn.decoder
@@ -108,10 +118,13 @@ decoder =
 encoder : TsEncode.Encoder Column
 encoder =
     TsEncode.union
-        (\vCompleted vDated vNamedTag vOtherTags vUndated vUntagged value ->
+        (\vCompleted vCustomFilter vDated vNamedTag vOtherTags vUndated vUntagged value ->
             case value of
                 Completed config ->
                     vCompleted config
+
+                CustomFilter config ->
+                    vCustomFilter config
 
                 Dated config ->
                     vDated config
@@ -129,6 +142,7 @@ encoder =
                     vUntagged config
         )
         |> TsEncode.variantTagged "completed" CompletedColumn.encoder
+        |> TsEncode.variantTagged "customFilter" CustomFilterColumn.encoder
         |> TsEncode.variantTagged "dated" DatedColumn.encoder
         |> TsEncode.variantTagged "namedTag" NamedTagColumn.encoder
         |> TsEncode.variantTagged "otherTags" OtherTagsColumn.encoder
@@ -173,6 +187,9 @@ containsTask taskId column =
         Completed completedColumn ->
             CompletedColumn.containsTask taskId completedColumn
 
+        CustomFilter customFilterColumn ->
+            CustomFilterColumn.containsTask taskId customFilterColumn
+
         Dated datedColumn ->
             DatedColumn.containsTask taskId datedColumn
 
@@ -194,6 +211,9 @@ isCollapsed column =
     case column of
         Completed completedColumn ->
             CompletedColumn.isCollapsed completedColumn
+
+        CustomFilter customFilterColumn ->
+            CustomFilterColumn.isCollapsed customFilterColumn
 
         Dated datedColumn ->
             DatedColumn.isCollapsed datedColumn
@@ -227,6 +247,9 @@ name column =
         Completed completedColumn ->
             CompletedColumn.name completedColumn
 
+        CustomFilter customFilterColumn ->
+            CustomFilterColumn.name customFilterColumn
+
         Dated datedColumn ->
             DatedColumn.name datedColumn
 
@@ -259,6 +282,9 @@ typeString column =
         Completed _ ->
             "Completed"
 
+        CustomFilter _ ->
+            "Custom Filter"
+
         Dated _ ->
             "Dated"
 
@@ -285,6 +311,10 @@ addTaskItem today taskItem column =
         Completed _ ->
             ( column, PlacementResult.DoesNotBelong )
 
+        CustomFilter customFilterColumn ->
+            CustomFilterColumn.addTaskItem taskItem customFilterColumn
+                |> Tuple.mapFirst CustomFilter
+
         Dated datedColumn ->
             DatedColumn.addTaskItem today taskItem datedColumn
                 |> Tuple.mapFirst Dated
@@ -307,25 +337,28 @@ addTaskItem today taskItem column =
 
 
 setCollapse : Bool -> Column -> Column
-setCollapse isCollapsed_ column =
+setCollapse newCollapsed column =
     case column of
         Completed completedColumn ->
-            Completed (CompletedColumn.setCollapse isCollapsed_ completedColumn)
+            Completed (CompletedColumn.setCollapse newCollapsed completedColumn)
+
+        CustomFilter customFilterColumn ->
+            CustomFilter (CustomFilterColumn.setCollapse newCollapsed customFilterColumn)
 
         Dated datedColumn ->
-            Dated (DatedColumn.setCollapse isCollapsed_ datedColumn)
+            Dated (DatedColumn.setCollapse newCollapsed datedColumn)
 
         NamedTag namedTagColumn ->
-            NamedTag (NamedTagColumn.setCollapse isCollapsed_ namedTagColumn)
+            NamedTag (NamedTagColumn.setCollapse newCollapsed namedTagColumn)
 
         OtherTags otherTagsColumn ->
-            OtherTags (OtherTagsColumn.setCollapse isCollapsed_ otherTagsColumn)
+            OtherTags (OtherTagsColumn.setCollapse newCollapsed otherTagsColumn)
 
         Undated undatedColumn ->
-            Undated (UndatedColumn.setCollapse isCollapsed_ undatedColumn)
+            Undated (UndatedColumn.setCollapse newCollapsed undatedColumn)
 
         Untagged untaggedColumn ->
-            Untagged (UntaggedColumn.setCollapse isCollapsed_ untaggedColumn)
+            Untagged (UntaggedColumn.setCollapse newCollapsed untaggedColumn)
 
 
 setNameToDefault : DefaultColumnNames -> Column -> Column
@@ -333,6 +366,9 @@ setNameToDefault defaultColumnNames column =
     case column of
         Completed completedColumn ->
             Completed (CompletedColumn.setNameToDefault defaultColumnNames completedColumn)
+
+        CustomFilter _ ->
+            column
 
         Dated datedColumn ->
             Dated (DatedColumn.setNameToDefault defaultColumnNames datedColumn)
@@ -356,6 +392,9 @@ setTagsToHide tags column =
         Completed completedColumn ->
             Completed (CompletedColumn.setTagsToHide tags completedColumn)
 
+        CustomFilter customFilterColumn ->
+            CustomFilter (CustomFilterColumn.setTagsToHide tags customFilterColumn)
+
         Dated datedColumn ->
             Dated (DatedColumn.setTagsToHide tags datedColumn)
 
@@ -378,6 +417,9 @@ toggleCollapse column =
         Completed completedColumn ->
             Completed (CompletedColumn.toggleCollapse completedColumn)
 
+        CustomFilter customFilterColumn ->
+            CustomFilter (CustomFilterColumn.toggleCollapse customFilterColumn)
+
         Dated datedColumn ->
             Dated (DatedColumn.toggleCollapse datedColumn)
 
@@ -399,6 +441,9 @@ updateName newName column =
     case column of
         Completed completedColumn ->
             Completed (CompletedColumn.updateName newName completedColumn)
+
+        CustomFilter customFilterColumn ->
+            CustomFilter (CustomFilterColumn.updateName newName customFilterColumn)
 
         Dated datedColumn ->
             Dated (DatedColumn.updateName newName datedColumn)
@@ -436,6 +481,9 @@ tagsToHide column =
         Completed completedColumn ->
             CompletedColumn.tagsToHide completedColumn
 
+        CustomFilter customFilterColumn ->
+            CustomFilterColumn.tagsToHide customFilterColumn
+
         Dated datedColumn ->
             DatedColumn.tagsToHide datedColumn
 
@@ -457,6 +505,9 @@ toList column =
     case column of
         Completed completedColumn ->
             CompletedColumn.toList completedColumn
+
+        CustomFilter customFilterColumn ->
+            CustomFilterColumn.toList customFilterColumn
 
         Dated datedColumn ->
             DatedColumn.toList datedColumn

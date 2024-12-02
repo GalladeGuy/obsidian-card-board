@@ -121,6 +121,7 @@ type Msg
     | EnteredColumnCompletedLimit Int String
     | EnteredColumnName Int String
     | EnteredColumnNamedTagTag Int String
+    | EnteredCustomFilterFilterExpression Int String
     | EnteredDatedColumnRangeValueFrom Int String
     | EnteredDatedColumnRangeValueTo Int String
     | EnteredDefaultColumnName String String
@@ -295,6 +296,9 @@ update msg model =
 
         EnteredColumnNamedTagTag columnIndex tag ->
             mapCurrentColumnsForm (ColumnsForm.updateNamedTagTag columnIndex tag) model
+
+        EnteredCustomFilterFilterExpression columnIndex expression ->
+            mapCurrentColumnsForm (ColumnsForm.updateCustomFilterFilterExpression columnIndex expression) model
 
         EnteredDatedColumnRangeValueFrom index value ->
             mapCurrentColumnsForm (ColumnsForm.updateDatedColumnRangeValueFrom index value) model
@@ -1447,12 +1451,19 @@ boardSettingsForm boardConfigForm boardIndex defaultColumnNames multiSelect drag
                         []
                     ]
                 ]
-            , Html.div [ class "setting-item dialog-buttons" ]
-                [ Html.button
-                    [ class "mod-warning"
-                    , onClick DeleteBoardRequested
+            , Html.div [ class "setting-item" ]
+                [ Html.div [ class "setting-item-info" ]
+                    [ Html.div [ class "setting-item-name" ]
+                        [ Html.text "Delete this board" ]
+                    , Html.div [ class "setting-item-description" ]
+                        [ Html.text "Delete this board" ]
                     ]
-                    [ Html.text "Delete this board"
+                , Html.div [ class "setting-item-control" ]
+                    [ Html.button
+                        [ class "mod-warning"
+                        , onClick DeleteBoardRequested
+                        ]
+                        [ Html.text "Delete this board" ]
                     ]
                 ]
             ]
@@ -1590,6 +1601,17 @@ settingsColumnControlView index columnForm =
                     , value completedForm.limit
                     , attribute "size" "3"
                     , onInput <| EnteredColumnCompletedLimit index
+                    ]
+                    []
+                ]
+
+        ColumnForm.CustomFilterColumnForm _ customFilterForm ->
+            Html.div [ class "cardboard-settings-column-item-controls" ]
+                [ Html.text <| "Filter: "
+                , Html.input
+                    [ type_ "text"
+                    , value <| customFilterForm.filterExpression
+                    , onInput <| EnteredCustomFilterFilterExpression index
                     ]
                     []
                 ]

@@ -47,6 +47,9 @@ safeDecoder =
                 "Completed" ->
                     Ok <| Just (ColumnForm.CompletedColumnForm False { name = form.name, limit = "10" })
 
+                "CustomFilter" ->
+                    Ok <| Just (ColumnForm.CustomFilterColumnForm False { name = form.name, filterExpression = "" })
+
                 "Dated" ->
                     Ok <| Just (ColumnForm.DatedColumnForm False { name = form.name, rangeType = "Before", from = "", to = "" })
 
@@ -103,11 +106,19 @@ optionsForSelect form newColumnConfigForm =
                 []
 
             else
-                [ { isSelected = newColumnConfigForm.columnType == "completed"
+                [ { isSelected = newColumnConfigForm.columnType == "Completed"
                   , text = "Completed"
                   , value = "Completed"
                   }
                 ]
+
+        customFilter : List Option
+        customFilter =
+            [ { isSelected = newColumnConfigForm.columnType == "CustomFilter"
+              , text = "Custom Filter"
+              , value = "CustomFilter"
+              }
+            ]
 
         otherTags : List Option
         otherTags =
@@ -115,7 +126,7 @@ optionsForSelect form newColumnConfigForm =
                 []
 
             else
-                [ { isSelected = newColumnConfigForm.columnType == "otherTags"
+                [ { isSelected = newColumnConfigForm.columnType == "OtherTags"
                   , text = "Other Tags"
                   , value = "OtherTags"
                   }
@@ -127,7 +138,7 @@ optionsForSelect form newColumnConfigForm =
                 []
 
             else
-                [ { isSelected = newColumnConfigForm.columnType == "undated"
+                [ { isSelected = newColumnConfigForm.columnType == "Undated"
                   , text = "Undated"
                   , value = "Undated"
                   }
@@ -139,7 +150,7 @@ optionsForSelect form newColumnConfigForm =
                 []
 
             else
-                [ { isSelected = newColumnConfigForm.columnType == "untagged"
+                [ { isSelected = newColumnConfigForm.columnType == "Untagged"
                   , text = "Untagged"
                   , value = "Untagged"
                   }
@@ -148,13 +159,14 @@ optionsForSelect form newColumnConfigForm =
         allColumns : List Option
         allColumns =
             completed
-                ++ [ { isSelected = newColumnConfigForm.columnType == "dated"
+                ++ customFilter
+                ++ [ { isSelected = newColumnConfigForm.columnType == "Dated"
                      , text = "Dated"
                      , value = "Dated"
                      }
                    ]
                 ++ otherTags
-                ++ [ { isSelected = newColumnConfigForm.columnType == "namedTag"
+                ++ [ { isSelected = newColumnConfigForm.columnType == "NamedTag"
                      , text = "Tagged"
                      , value = "NamedTag"
                      }

@@ -10,6 +10,7 @@ module Form.Column exposing
     , safeDecoder
     , typeString
     , updateCompletedColumnLimit
+    , updateCustomFilterFilterExpression
     , updateDatedColumnRangeType
     , updateDatedColumnRangeValueFrom
     , updateDatedColumnRangeValueTo
@@ -20,6 +21,7 @@ module Form.Column exposing
 import Column exposing (Column)
 import DefaultColumnNames exposing (DefaultColumnNames)
 import Form.Column.Completed as CompletedColumnForm exposing (CompletedColumnForm)
+import Form.Column.CustomFilter as CustomFilterColumnForm exposing (CustomFilterColumnForm)
 import Form.Column.Dated as DatedColumnForm exposing (DatedColumnForm)
 import Form.Column.NamedTag as NamedTagColumnForm exposing (NamedTagColumnForm)
 import Form.Column.OtherTags as OtherTagsColumnForm exposing (OtherTagsColumnForm)
@@ -34,6 +36,7 @@ import Form.SafeDecoder as SD
 
 type ColumnForm
     = CompletedColumnForm Bool CompletedColumnForm
+    | CustomFilterColumnForm Bool CustomFilterColumnForm
     | DatedColumnForm Bool DatedColumnForm
     | NamedTagColumnForm Bool NamedTagColumnForm
     | OtherTagsColumnForm Bool OtherTagsColumnForm
@@ -50,6 +53,9 @@ init column =
     case column of
         Column.Completed completedColumn ->
             CompletedColumnForm (Column.isCollapsed column) <| CompletedColumnForm.init completedColumn
+
+        Column.CustomFilter customFilterColumn ->
+            CustomFilterColumnForm (Column.isCollapsed column) <| CustomFilterColumnForm.init customFilterColumn
 
         Column.Dated datedColumn ->
             DatedColumnForm (Column.isCollapsed column) <| DatedColumnForm.init datedColumn
@@ -81,6 +87,12 @@ safeDecoder =
                     subform
                         |> SD.run CompletedColumnForm.safeDecoder
                         |> Result.map Column.Completed
+                        |> Result.map (Column.setCollapse isCollapsed_)
+
+                CustomFilterColumnForm isCollapsed_ subform ->
+                    subform
+                        |> SD.run CustomFilterColumnForm.safeDecoder
+                        |> Result.map Column.CustomFilter
                         |> Result.map (Column.setCollapse isCollapsed_)
 
                 DatedColumnForm isCollapsed_ subform ->
@@ -166,6 +178,9 @@ name form =
         CompletedColumnForm _ subform ->
             subform.name
 
+        CustomFilterColumnForm _ subform ->
+            subform.name
+
         DatedColumnForm _ subform ->
             subform.name
 
@@ -188,6 +203,9 @@ placeholder defaultColumnNames form =
         CompletedColumnForm _ _ ->
             DefaultColumnNames.nameFor "completed" defaultColumnNames
 
+        CustomFilterColumnForm _ _ ->
+            ""
+
         DatedColumnForm _ _ ->
             ""
 
@@ -209,6 +227,9 @@ typeString form =
     case form of
         CompletedColumnForm _ _ ->
             "Completed"
+
+        CustomFilterColumnForm _ _ ->
+            "Custom Filter"
 
         DatedColumnForm _ _ ->
             "Dated"
@@ -235,6 +256,16 @@ updateCompletedColumnLimit newLimit form =
     case form of
         CompletedColumnForm isCollapsed_ subform ->
             CompletedColumnForm isCollapsed_ <| CompletedColumnForm.updateLimit newLimit subform
+
+        _ ->
+            form
+
+
+updateCustomFilterFilterExpression : String -> ColumnForm -> ColumnForm
+updateCustomFilterFilterExpression newFilterExpression form =
+    case form of
+        CustomFilterColumnForm isCollapsed_ subform ->
+            CustomFilterColumnForm isCollapsed_ <| CustomFilterColumnForm.updateFilterExpression newFilterExpression subform
 
         _ ->
             form
@@ -275,6 +306,9 @@ updateName newName form =
     case form of
         CompletedColumnForm isCollapsed_ subform ->
             CompletedColumnForm isCollapsed_ <| CompletedColumnForm.updateName newName subform
+
+        CustomFilterColumnForm isCollapsed_ subform ->
+            CustomFilterColumnForm isCollapsed_ <| CustomFilterColumnForm.updateName newName subform
 
         DatedColumnForm isCollapsed_ subform ->
             DatedColumnForm isCollapsed_ <| DatedColumnForm.updateName newName subform
