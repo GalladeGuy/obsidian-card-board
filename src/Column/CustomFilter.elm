@@ -230,7 +230,7 @@ matchesFilter expression taskItem =
         parseExpr tokens =
             parseOr tokens
 
-        -- Parse OR expressions (lowest precedence)
+        -- Parse OR expressions
         parseOr : List String -> ( Bool, List String )
         parseOr tokens =
             let
@@ -260,7 +260,7 @@ matchesFilter expression taskItem =
                 _ ->
                     ( leftResult, rest1 )
 
-        -- Parse NOT expressions (highest precedence)
+        -- Parse NOT expressions
         parseNot : List String -> ( Bool, List String )
         parseNot tokens =
             case tokens of
@@ -305,6 +305,9 @@ matchesFilter expression taskItem =
                     else
                         ( False, [] )  -- Invalid token
     in
-    case parseOr (tokenize expression) of
-        ( result, [] ) -> result
-        ( _, _ ) -> False  -- Invalid expression or extra tokens
+    if String.isEmpty expression then
+        True  -- Empty filter matches all tasks
+    else
+        case parseOr (tokenize expression) of
+            ( result, [] ) -> result
+            ( _, _ ) -> False  -- Invalid expression or extra tokens
