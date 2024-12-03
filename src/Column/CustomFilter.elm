@@ -275,7 +275,7 @@ matchesFilter expression taskItem =
 
         containsText : String -> Bool
         containsText searchStr =
-            String.contains searchStr (TaskItem.titleWithTags taskItem)
+            String.contains searchStr (TaskItem.originalLine taskItem)
 
         -- Parse expression with C operator precedence
         parseExpr : List String -> ( Bool, List String )
