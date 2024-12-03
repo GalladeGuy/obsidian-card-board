@@ -1499,7 +1499,7 @@ settingsColumnView uniqueId defaultColumnNames index columnForm =
             , attributeIf isBeingDragged (style "opacity" "0.0")
             ]
             [ Html.div
-                [ class "cardboard-settings-column-item-detail card-board-dragable"
+                [ class "cardboard-settings-column-item-draghandle card-board-dragable"
                 , onDown
                     (\e ->
                         ColumnSettingsMouseDown <|
@@ -1511,30 +1511,29 @@ settingsColumnView uniqueId defaultColumnNames index columnForm =
                             )
                     )
                 ]
-                [ FeatherIcons.toHtml
-                    []
-                    dragIcon
-                ]
-            , Html.div [ class "cardboard-settings-column-item-type" ]
-                [ Html.text <| ColumnForm.typeString columnForm ]
-            , Html.div [ class "cardboard-settings-column-item-detail" ]
-                [ Html.input
-                    [ type_ "text"
-                    , placeholder defaultName
-                    , value name
-                    , onInput <| EnteredColumnName index
+                [ FeatherIcons.toHtml [] dragIcon ]
+            , Html.div [ class "cardboard-settings-column-item-content" ]
+                [ Html.div [ class "cardboard-settings-column-item-type" ]
+                    [ Html.text <| ColumnForm.typeString columnForm ]
+                , Html.div [ class "cardboard-settings-column-item-detail" ]
+                    [ Html.input
+                        [ type_ "text"
+                        , placeholder defaultName
+                        , value name
+                        , onInput <| EnteredColumnName index
+                        ]
+                        []
                     ]
-                    []
-                ]
-            , settingsColumnControlView index columnForm
-            , Html.div
-                [ class "cardboard-settings-column-item-button"
-                , onClick <| ColumnDeleteClicked index
-                ]
-                [ FeatherIcons.xCircle
-                    |> FeatherIcons.withSize 1
-                    |> FeatherIcons.withSizeUnit "em"
-                    |> FeatherIcons.toHtml []
+                , settingsColumnControlView index columnForm
+                , Html.div
+                    [ class "cardboard-settings-column-item-button"
+                    , onClick <| ColumnDeleteClicked index
+                    ]
+                    [ FeatherIcons.xCircle
+                        |> FeatherIcons.withSize 1
+                        |> FeatherIcons.withSizeUnit "em"
+                        |> FeatherIcons.toHtml []
+                    ]
                 ]
             ]
         , columnSettingsBeacon (BeaconPosition.After name)
@@ -1564,23 +1563,28 @@ settingsColumnDraggedView isDragging columnForm dragTracker =
                     , style "cursor" "grabbing"
                     , style "opacity" "0.85"
                     ]
-                    [ FeatherIcons.toHtml [] dragIcon
-                    , Html.div [ class "cardboard-settings-column-item-type" ]
-                        [ Html.text <| ColumnForm.typeString draggedColumnForm ]
-                    , Html.div [ class "cardboard-settings-column-item-detail" ]
-                        [ Html.input
-                            [ type_ "text"
-                            , value <| ColumnForm.name draggedColumnForm
-                            ]
-                            []
+                    [ Html.div
+                        [ class "cardboard-settings-column-item-draghandle card-board-dragable"
                         ]
-                    , settingsColumnControlView 0 draggedColumnForm
-                    , Html.div
-                        [ class "cardboard-settings-column-item-button" ]
-                        [ FeatherIcons.xCircle
-                            |> FeatherIcons.withSize 1
-                            |> FeatherIcons.withSizeUnit "em"
-                            |> FeatherIcons.toHtml []
+                        [ FeatherIcons.toHtml [] dragIcon ]
+                    , Html.div [ class "cardboard-settings-column-item-content" ]
+                        [ Html.div [ class "cardboard-settings-column-item-type" ]
+                            [ Html.text <| ColumnForm.typeString draggedColumnForm ]
+                        , Html.div [ class "cardboard-settings-column-item-detail" ]
+                            [ Html.input
+                                [ type_ "text"
+                                , value <| ColumnForm.name draggedColumnForm
+                                ]
+                                []
+                            ]
+                        , settingsColumnControlView 0 draggedColumnForm
+                        , Html.div
+                            [ class "cardboard-settings-column-item-button" ]
+                            [ FeatherIcons.xCircle
+                                |> FeatherIcons.withSize 1
+                                |> FeatherIcons.withSizeUnit "em"
+                                |> FeatherIcons.toHtml []
+                            ]
                         ]
                     ]
                 ]
