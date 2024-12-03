@@ -41,6 +41,14 @@ type alias Config =
     }
 
 
+type alias TokenState =
+    { current : String
+    , tokens : List String
+    , inEscape : Bool
+    , quoteChar : Maybe Char
+    }
+
+
 -- CONSTRUCTION
 
 
@@ -204,26 +212,70 @@ matchesFilter expression taskItem =
                         tokens
                     else
                         curr :: tokens
+
+                finalizeTokens : TokenState -> List String
+                finalizeTokens state =
+                    case state.quoteChar of
+                        Just _ ->
+                            []  -- Unclosed quote, return empty list
+                        Nothing ->
+                            addToken state.current state.tokens
                         
-                processChar : Char -> ( String, List String ) -> ( String, List String )
-                processChar c ( curr, tokens ) =
-                    if c == '(' || c == ')' then
-                        ( "", String.fromChar c :: addToken curr tokens )
-                    else if isWhitespace c then
-                        ( "", addToken curr tokens )
+                processEscape : Char -> TokenState -> TokenState
+                processEscape c state =
+                    if state.inEscape then
+                        case c of
+                            'n' -> { state | current = state.current ++ "\n", inEscape = False }
+                            't' -> { state | current = state.current ++ "\t", inEscape = False }
+                            '\'' -> { state | current = state.current ++ "'", inEscape = False }
+                            '"' -> { state | current = state.current ++ "\"", inEscape = False }
+                            '\\' -> { state | current = state.current ++ "\\", inEscape = False }
+                            _ -> { state | current = state.current ++ String.fromChar c, inEscape = False }
+                    else if c == '\\' then
+                        { state | inEscape = True }
                     else
-                        ( curr ++ String.fromChar c, tokens )
+                        processChar c state
+
+                processChar : Char -> TokenState -> TokenState
+                processChar c state =
+                    case state.quoteChar of
+                        Just quote ->
+                            if c == quote && not state.inEscape then
+                                { state | current = "", tokens = addToken state.current state.tokens, quoteChar = Nothing }
+                            else if c == '\\' then
+                                { state | inEscape = True }
+                            else
+                                { state | current = state.current ++ String.fromChar c }
+                        Nothing ->
+                            if c == '"' || c == '\'' then
+                                { state | current = "", quoteChar = Just c }
+                            else if c == '(' || c == ')' then
+                                { state | current = "", tokens = String.fromChar c :: addToken state.current state.tokens }
+                            else if isWhitespace c then
+                                { state | current = "", tokens = addToken state.current state.tokens }
+                            else
+                                { state | current = state.current ++ String.fromChar c }
+
+                initialState =
+                    { current = ""
+                    , tokens = []
+                    , inEscape = False
+                    , quoteChar = Nothing
+                    }
             in
             str
-                |> String.toLower
                 |> String.toList
-                |> List.foldl processChar ( "", [] )
-                |> (\( curr, tokens ) -> addToken curr tokens)
+                |> List.foldl processEscape initialState
+                |> finalizeTokens
                 |> List.reverse
 
         isWhitespace : Char -> Bool
         isWhitespace c =
             c == ' ' || c == '\t' || c == '\n' || c == '\r'
+
+        containsText : String -> Bool
+        containsText searchStr =
+            String.contains searchStr (TaskItem.titleWithTags taskItem)
 
         -- Parse expression with C operator precedence
         parseExpr : List String -> ( Bool, List String )
@@ -298,6 +350,9 @@ matchesFilter expression taskItem =
                     
                 "completed" :: rest ->
                     ( isCompleted, rest )
+                    
+                "contains" :: searchStr :: rest ->
+                    ( containsText searchStr, rest )
                     
                 token :: rest ->
                     if String.startsWith "#" token then
