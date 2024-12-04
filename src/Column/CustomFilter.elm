@@ -185,12 +185,12 @@ matchesFilter expression taskItem =
                         Ok date -> Date.compare itemDate date == LT
                         Err _ -> False
                         
-        afterDate dateStr =
+        byDate dateStr =
             case TaskItem.due taskItem of
                 Nothing -> False
                 Just itemDate ->
                     case Date.fromIsoString dateStr of
-                        Ok date -> Date.compare itemDate date == GT
+                        Ok date -> Date.compare itemDate date == LT || Date.compare itemDate date == EQ
                         Err _ -> False
                         
         onDate dateStr =
@@ -199,6 +199,22 @@ matchesFilter expression taskItem =
                 Just itemDate ->
                     case Date.fromIsoString dateStr of
                         Ok date -> Date.compare itemDate date == EQ
+                        Err _ -> False
+        
+        fromDate dateStr =
+            case TaskItem.due taskItem of
+                Nothing -> False
+                Just itemDate ->
+                    case Date.fromIsoString dateStr of
+                        Ok date -> Date.compare itemDate date == GT || Date.compare itemDate date == EQ
+                        Err _ -> False
+
+        afterDate dateStr =
+            case TaskItem.due taskItem of
+                Nothing -> False
+                Just itemDate ->
+                    case Date.fromIsoString dateStr of
+                        Ok date -> Date.compare itemDate date == GT
                         Err _ -> False
 
         isCompleted =
@@ -354,12 +370,18 @@ matchesFilter expression taskItem =
                         
                 "before" :: date :: rest ->
                     ( beforeDate date, rest )
-                    
-                "after" :: date :: rest ->
-                    ( afterDate date, rest )
+                
+                "by" :: date :: rest ->
+                    ( byDate date, rest )
                     
                 "on" :: date :: rest ->
                     ( onDate date, rest )
+                    
+                "from" :: date :: rest ->
+                    ( fromDate date, rest )
+                    
+                "after" :: date :: rest ->
+                    ( afterDate date, rest )
                     
                 "completed" :: rest ->
                     ( isCompleted, rest )
