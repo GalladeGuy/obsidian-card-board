@@ -20,6 +20,7 @@ module Column.CustomFilter exposing
 import Date exposing (Date)
 import DefaultColumnNames exposing (DefaultColumnNames)
 import PlacementResult exposing (PlacementResult)
+import TagList exposing (TagList)
 import TaskItem exposing (TaskItem)
 import TaskList exposing (TaskList)
 import TsJson.Decode as TsDecode
@@ -273,9 +274,21 @@ matchesFilter expression taskItem =
         isWhitespace c =
             c == ' ' || c == '\t' || c == '\n' || c == '\r'
 
-        containsText : String -> Bool
-        containsText searchStr =
-            String.contains searchStr (TaskItem.originalLine taskItem)
+        containsText : String -> String -> Bool
+        containsText searchStr text =
+            String.contains searchStr text
+
+        containsInTags : String -> Bool
+        containsInTags searchStr =
+            List.any (String.contains searchStr) (TagList.toStrings (TaskItem.tags taskItem))
+
+        getFilename : String -> String
+        getFilename path =
+            path
+                |> String.split "/"
+                |> List.reverse
+                |> List.head
+                |> Maybe.withDefault path
 
         -- Parse expression with C operator precedence
         parseExpr : List String -> ( Bool, List String )
@@ -351,9 +364,27 @@ matchesFilter expression taskItem =
                 "completed" :: rest ->
                     ( isCompleted, rest )
                     
+                "contents" :: "contains" :: searchStr :: rest ->
+                    ( containsText searchStr (TaskItem.originalLine taskItem), rest )
+
+                "title" :: "contains" :: searchStr :: rest ->
+                    ( containsText searchStr (TaskItem.title taskItem), rest )
+
+                "tags" :: "contains" :: searchStr :: rest ->
+                    ( containsInTags searchStr, rest )
+
+                "notes" :: "contains" :: searchStr :: rest ->
+                    ( containsText searchStr (TaskItem.notes taskItem), rest )
+
+                "path" :: "contains" :: searchStr :: rest ->
+                    ( containsText searchStr (TaskItem.filePath taskItem), rest )
+
+                "filename" :: "contains" :: searchStr :: rest ->
+                    ( containsText searchStr (getFilename (TaskItem.filePath taskItem)), rest )
+
                 "contains" :: searchStr :: rest ->
-                    ( containsText searchStr, rest )
-                    
+                    ( containsText searchStr (TaskItem.originalLine taskItem), rest )
+
                 token :: rest ->
                     if String.startsWith "#" token then
                         ( hasTag token, rest )
