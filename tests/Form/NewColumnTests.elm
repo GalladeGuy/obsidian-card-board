@@ -43,11 +43,15 @@ optionsForSelect =
     describe "optionsForSelect"
         [ test "returns all options if there is an empty columnsForm" <|
             \() ->
-                NewColumnForm.optionsForSelect ColumnsForm.empty (NewColumnForm "" "completed")
+                NewColumnForm.optionsForSelect ColumnsForm.empty (NewColumnForm "" "Completed")
                     |> Expect.equal
                         [ { isSelected = True
                           , text = "Completed"
                           , value = "Completed"
+                          }
+                        , { isSelected = False
+                          , text = "Custom Filter"
+                          , value = "CustomFilter"
                           }
                         , { isSelected = False
                           , text = "Dated"
@@ -79,6 +83,10 @@ optionsForSelect =
                           , value = "Completed"
                           }
                         , { isSelected = False
+                          , text = "Custom Filter"
+                          , value = "CustomFilter"
+                          }
+                        , { isSelected = False
                           , text = "Dated"
                           , value = "Dated"
                           }
@@ -108,9 +116,13 @@ optionsForSelect =
                             [ Column.completed <| CompletedColumn.init "" 0 10 ]
                             |> ColumnsForm.init
                 in
-                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "dated")
+                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "Dated")
                     |> Expect.equal
-                        [ { isSelected = True
+                        [ { isSelected = False
+                          , text = "Custom Filter"
+                          , value = "CustomFilter"
+                          }
+                        , { isSelected = True
                           , text = "Dated"
                           , value = "Dated"
                           }
@@ -140,11 +152,15 @@ optionsForSelect =
                             [ Column.otherTags "" [] ]
                             |> ColumnsForm.init
                 in
-                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "dated")
+                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "Dated")
                     |> Expect.equal
                         [ { isSelected = False
                           , text = "Completed"
                           , value = "Completed"
+                          }
+                        , { isSelected = False
+                          , text = "Custom Filter"
+                          , value = "CustomFilter"
                           }
                         , { isSelected = True
                           , text = "Dated"
@@ -172,11 +188,15 @@ optionsForSelect =
                             [ Column.undated "" ]
                             |> ColumnsForm.init
                 in
-                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "otherTags")
+                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "OtherTags")
                     |> Expect.equal
                         [ { isSelected = False
                           , text = "Completed"
                           , value = "Completed"
+                          }
+                        , { isSelected = False
+                          , text = "Custom Filter"
+                          , value = "CustomFilter"
                           }
                         , { isSelected = False
                           , text = "Dated"
@@ -204,11 +224,15 @@ optionsForSelect =
                             [ Column.untagged "" ]
                             |> ColumnsForm.init
                 in
-                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "undated")
+                NewColumnForm.optionsForSelect columnsForm (NewColumnForm "" "Undated")
                     |> Expect.equal
                         [ { isSelected = False
                           , text = "Completed"
                           , value = "Completed"
+                          }
+                        , { isSelected = False
+                          , text = "Custom Filter"
+                          , value = "CustomFilter"
                           }
                         , { isSelected = False
                           , text = "Dated"

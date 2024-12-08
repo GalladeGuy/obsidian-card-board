@@ -112,14 +112,6 @@ optionsForSelect form newColumnConfigForm =
                   }
                 ]
 
-        customFilter : List Option
-        customFilter =
-            [ { isSelected = newColumnConfigForm.columnType == "CustomFilter"
-              , text = "Custom Filter"
-              , value = "CustomFilter"
-              }
-            ]
-
         otherTags : List Option
         otherTags =
             if alreadyHasOtherTags then
@@ -159,7 +151,11 @@ optionsForSelect form newColumnConfigForm =
         allColumns : List Option
         allColumns =
             completed
-                ++ customFilter
+                ++ [ { isSelected = newColumnConfigForm.columnType == "CustomFilter"
+                     , text = "Custom Filter"
+                     , value = "CustomFilter"
+                     }
+                   ]
                 ++ [ { isSelected = newColumnConfigForm.columnType == "Dated"
                      , text = "Dated"
                      , value = "Dated"
