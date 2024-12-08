@@ -78,7 +78,7 @@ matches checkString (Tag tagString) =
             else
                 tag == check
     in
-    exactMatch (String.toLower checkString) (String.toLower tagString)
+    exactMatch (String.toLower <| removeLeadingHash checkString) (String.toLower <| removeLeadingHash tagString)
 
 
 startsWith : String -> Tag -> Bool
@@ -111,3 +111,12 @@ isValidTagCharacter c =
         || (code == Unicode.forwardslashCode)
         || (code == Unicode.underscoreCode)
         || (code > Unicode.basicLatinEndCode && not (Unicode.isWhitespace c))
+
+
+removeLeadingHash : String -> String
+removeLeadingHash t =
+    if String.startsWith "#" t then
+        String.dropLeft 1 t
+
+    else
+        t
