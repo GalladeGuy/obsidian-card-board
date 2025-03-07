@@ -109,6 +109,13 @@ export type CardBoardPluginSettingsPostV11 = {
           collapsed : boolean;
           name : string;
         }
+      } | {
+        tag : "customFilter"
+        data : {
+          collapsed : boolean;
+          name : string;
+          expression : string;
+        }
       })[];
       filters : Filter[];
       filterPolarity : "Allow" | "Deny";
