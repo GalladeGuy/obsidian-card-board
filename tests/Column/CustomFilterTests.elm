@@ -17,6 +17,7 @@ suite : Test
 suite =
     concat
         [ addTaskItem
+        , dateTokens
         , decoder
         , encoder
         , init
@@ -284,6 +285,76 @@ tag =
 today : Date
 today =
     DateTimeHelpers.todayDate
+
+
+dateTokens : Test
+dateTokens =
+    describe "Date Tokens"
+        [ describe "today token"
+            [ test "Places an incomplete task item with due date matching 'on today'" <|
+                \() ->
+                    CustomFilterColumn.init "" "on today"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.today ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
+            , test "DoesNotBelong an incomplete task item with due date not matching 'on today'" <|
+                \() ->
+                    CustomFilterColumn.init "" "on today"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.tomorrow ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [], PlacementResult.DoesNotBelong )
+            ]
+        , describe "yesterday token"
+            [ test "Places an incomplete task item with due date matching 'on yesterday'" <|
+                \() ->
+                    CustomFilterColumn.init "" "on yesterday"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.yesterday ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
+            , test "DoesNotBelong an incomplete task item with due date not matching 'on yesterday'" <|
+                \() ->
+                    CustomFilterColumn.init "" "on yesterday"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.today ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [], PlacementResult.DoesNotBelong )
+            ]
+        , describe "tomorrow token"
+            [ test "Places an incomplete task item with due date matching 'on tomorrow'" <|
+                \() ->
+                    CustomFilterColumn.init "" "on tomorrow"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.tomorrow ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
+            , test "DoesNotBelong an incomplete task item with due date not matching 'on tomorrow'" <|
+                \() ->
+                    CustomFilterColumn.init "" "on tomorrow"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.today ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [], PlacementResult.DoesNotBelong )
+            ]
+        , describe "before/after with date tokens"
+            [ test "Places an incomplete task item with due date matching 'before tomorrow'" <|
+                \() ->
+                    CustomFilterColumn.init "" "before tomorrow"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.today ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
+            , test "Places an incomplete task item with due date matching 'after yesterday'" <|
+                \() ->
+                    CustomFilterColumn.init "" "after yesterday"
+                        |> CustomFilterColumn.addTaskItem today (taskItem ("- [ ] foo @due(" ++ DateTimeHelpers.today ++ ")"))
+                        |> Tuple.mapFirst CustomFilterColumn.toList
+                        |> Tuple.mapFirst (List.map TaskItem.title)
+                        |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
+            ]
+        ]
 
 
 toList : Test
