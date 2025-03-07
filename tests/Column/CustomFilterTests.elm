@@ -1,7 +1,9 @@
 module Column.CustomFilterTests exposing (suite)
 
+import Date exposing (Date)
 import Column.CustomFilter as CustomFilterColumn exposing (CustomFilterColumn)
 import Expect
+import Helpers.DateTimeHelpers as DateTimeHelpers
 import Helpers.DecodeHelpers as DecodeHelpers
 import Helpers.TaskItemHelpers as TaskItemHelpers
 import Parser
@@ -34,48 +36,48 @@ addTaskItem =
             [ test "Places an incomplete task item with no sub-tasks and a matching tag" <|
                 \() ->
                     CustomFilterColumn.init "" "#atag"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo #atag")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo #atag")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
             , test "Places an incomplete task item with no sub-tasks and a matching tag (amongst others)" <|
                 \() ->
                     CustomFilterColumn.init "" "#btag"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo #atag #btag #ctag")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo #atag #btag #ctag")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
             , test "Places an incomplete task item with no tags and an incomplete sub-task with a matching tag" <|
                 \() ->
                     CustomFilterColumn.init "" "#atag"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo\n  - [ ] bar #atag")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo\n  - [ ] bar #atag")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
             , test "Places an incomplete task item with no tags and an incomplete sub-task with a matching tag (amongst others)" <|
                 \() ->
                     CustomFilterColumn.init "" "#btag"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo\n  - [ ] bar #atag #btag #ctag")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo\n  - [ ] bar #atag #btag #ctag")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
             , test "DoesNotBelong an incomplete task item with no tags and no sub-tasks" <|
                 \() ->
                     CustomFilterColumn.init "" "#atag"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Expect.equal ( [], PlacementResult.DoesNotBelong )
             , test "DoesNotBelong an incomplete task item with a non-matching tag and no sub-tasks" <|
                 \() ->
                     CustomFilterColumn.init "" "#atag"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo #xtag")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo #xtag")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [], PlacementResult.DoesNotBelong )
             , test "DoesNotBelong an incomplete task item with no tags and an incomplete sub-task with a non-matching tag" <|
                 \() ->
                     CustomFilterColumn.init "" "#atag"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo\n  - [ ] bar #xtag")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo\n  - [ ] bar #xtag")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Expect.equal ( [], PlacementResult.DoesNotBelong )
             ]
@@ -83,42 +85,42 @@ addTaskItem =
             [ test "Places an incomplete task item with due date matching an \"on date\" expression" <|
                 \() ->
                     CustomFilterColumn.init "" "on 2024-01-01"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo @due(2024-01-01)")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo @due(2024-01-01)")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
             , test "DoesNotBelong an incomplete task item with due date not matching an \"on date\" expression" <|
                 \() ->
                     CustomFilterColumn.init "" "on 2024-01-01"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo @due(2024-01-02)")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo @due(2024-01-02)")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [], PlacementResult.DoesNotBelong )
             ,test "Places an incomplete task item with due date matching a \"before date\" expression" <|
                 \() ->
                     CustomFilterColumn.init "" "before 2024-01-03"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo @due(2024-01-01)")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo @due(2024-01-01)")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
             , test "DoesNotBelong an incomplete task item with due date not matching a \"before date\" expression" <|
                 \() ->
                     CustomFilterColumn.init "" "before 2024-01-03"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo @due(2024-01-03)")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo @due(2024-01-03)")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [], PlacementResult.DoesNotBelong )
             , test "Places an incomplete task item with due date matching an \"after date\" expression" <|
                 \() ->
                     CustomFilterColumn.init "" "after 2024-01-01"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo @due(2024-01-03)")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo @due(2024-01-03)")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [ "foo" ], PlacementResult.Placed )
             , test "DoesNotBelong an incomplete task item with due date not matching an \"after date\" expression" <|
                 \() ->
                     CustomFilterColumn.init "" "after 2024-01-01"
-                        |> CustomFilterColumn.addTaskItem (taskItem "- [ ] foo @due(2024-01-01)")
+                        |> CustomFilterColumn.addTaskItem today (taskItem "- [ ] foo @due(2024-01-01)")
                         |> Tuple.mapFirst CustomFilterColumn.toList
                         |> Tuple.mapFirst (List.map TaskItem.title)
                         |> Expect.equal ( [], PlacementResult.DoesNotBelong )
@@ -279,6 +281,11 @@ tag =
         ]
 
 
+today : Date
+today =
+    DateTimeHelpers.todayDate
+
+
 toList : Test
 toList =
     describe "toList"
@@ -338,7 +345,7 @@ updateName =
 justAdd : TaskItem -> CustomFilterColumn -> CustomFilterColumn
 justAdd item column =
     column
-        |> CustomFilterColumn.addTaskItem item
+        |> CustomFilterColumn.addTaskItem today item
         |> Tuple.first
 
 

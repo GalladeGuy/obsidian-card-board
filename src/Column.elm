@@ -312,7 +312,7 @@ addTaskItem today taskItem column =
             ( column, PlacementResult.DoesNotBelong )
 
         CustomFilter customFilterColumn ->
-            CustomFilterColumn.addTaskItem taskItem customFilterColumn
+            CustomFilterColumn.addTaskItem today taskItem customFilterColumn
                 |> Tuple.mapFirst CustomFilter
 
         Dated datedColumn ->

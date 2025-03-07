@@ -23,6 +23,7 @@ import PlacementResult exposing (PlacementResult)
 import TagList exposing (TagList)
 import TaskItem exposing (TaskItem)
 import TaskList exposing (TaskList)
+import Time
 import TsJson.Decode as TsDecode
 import TsJson.Decode.Pipeline as TsDecode
 import TsJson.Encode as TsEncode
@@ -121,9 +122,9 @@ toList (CustomFilterColumn _ _ tl) =
 -- MODIFICATION
 
 
-addTaskItem : TaskItem -> CustomFilterColumn -> ( CustomFilterColumn, PlacementResult )
-addTaskItem taskItem ((CustomFilterColumn c tth tl) as column) =
-    if matchesFilter (filterExpression column) taskItem then
+addTaskItem : Date -> TaskItem -> CustomFilterColumn -> ( CustomFilterColumn, PlacementResult )
+addTaskItem currentDate taskItem ((CustomFilterColumn c tth tl) as column) =
+    if matchesFilter (filterExpression column) taskItem currentDate then
         ( CustomFilterColumn c tth (TaskList.add taskItem tl), PlacementResult.Placed )
     else
         ( column, PlacementResult.DoesNotBelong )
@@ -171,17 +172,32 @@ configEncoder =
         ]
 
 
-matchesFilter : String -> TaskItem -> Bool
-matchesFilter expression taskItem =
+matchesFilter : String -> TaskItem -> Date -> Bool
+matchesFilter expression taskItem currentDate =
     let
         hasTag tag =
             TaskItem.hasThisTag (String.dropLeft 1 tag) taskItem
             
+        parseDateToken : String -> Result String Date
+        parseDateToken token =
+            case token of
+                "today" ->
+                    Ok currentDate
+                
+                "yesterday" ->
+                    Ok (Date.add Date.Days -1 currentDate)
+                
+                "tomorrow" ->
+                    Ok (Date.add Date.Days 1 currentDate)
+                
+                _ ->
+                    Date.fromIsoString token
+        
         beforeDate dateStr =
             case TaskItem.due taskItem of
                 Nothing -> False
                 Just itemDate ->
-                    case Date.fromIsoString dateStr of
+                    case parseDateToken dateStr of
                         Ok date -> Date.compare itemDate date == LT
                         Err _ -> False
                         
@@ -189,7 +205,7 @@ matchesFilter expression taskItem =
             case TaskItem.due taskItem of
                 Nothing -> False
                 Just itemDate ->
-                    case Date.fromIsoString dateStr of
+                    case parseDateToken dateStr of
                         Ok date -> Date.compare itemDate date == LT || Date.compare itemDate date == EQ
                         Err _ -> False
                         
@@ -197,7 +213,7 @@ matchesFilter expression taskItem =
             case TaskItem.due taskItem of
                 Nothing -> False
                 Just itemDate ->
-                    case Date.fromIsoString dateStr of
+                    case parseDateToken dateStr of
                         Ok date -> Date.compare itemDate date == EQ
                         Err _ -> False
         
@@ -205,7 +221,7 @@ matchesFilter expression taskItem =
             case TaskItem.due taskItem of
                 Nothing -> False
                 Just itemDate ->
-                    case Date.fromIsoString dateStr of
+                    case parseDateToken dateStr of
                         Ok date -> Date.compare itemDate date == GT || Date.compare itemDate date == EQ
                         Err _ -> False
 
@@ -213,7 +229,7 @@ matchesFilter expression taskItem =
             case TaskItem.due taskItem of
                 Nothing -> False
                 Just itemDate ->
-                    case Date.fromIsoString dateStr of
+                    case parseDateToken dateStr of
                         Ok date -> Date.compare itemDate date == GT
                         Err _ -> False
 
