@@ -264,196 +264,203 @@ compileFilterExpression expression =
         -- Empty filter matches all tasks
         \_ _ -> True
     else
-        -- Create a function that applies the tokenized and parsed filter to a task
-        \taskItem currentDate -> 
-            let
-                tokenized = tokenize expression
+        let
+            -- Pre-compute the tokens - this happens once per function creation
+            -- due to Elm's lazy evaluation of let bindings
+            tokenized = tokenize expression
+            
+            -- Create a function that uses these pre-computed tokens
+            evaluateFilter taskItem currentDate =
+                let
+                    
+                    -- Evaluation functions that depend on taskItem and currentDate
+                    hasTag tag =
+                        TaskItem.hasThisTag (String.dropLeft 1 tag) taskItem
+                    
+                    parseDateToken : String -> Result String Date
+                    parseDateToken token =
+                        case token of
+                            "today" ->
+                                Ok currentDate
+                            
+                            "yesterday" ->
+                                Ok (Date.add Date.Days -1 currentDate)
+                            
+                            "tomorrow" ->
+                                Ok (Date.add Date.Days 1 currentDate)
+                            
+                            _ ->
+                                Date.fromIsoString token
                 
-                -- Evaluation functions that depend on taskItem and currentDate
-                hasTag tag =
-                    TaskItem.hasThisTag (String.dropLeft 1 tag) taskItem
-                
-                parseDateToken : String -> Result String Date
-                parseDateToken token =
-                    case token of
-                        "today" ->
-                            Ok currentDate
-                        
-                        "yesterday" ->
-                            Ok (Date.add Date.Days -1 currentDate)
-                        
-                        "tomorrow" ->
-                            Ok (Date.add Date.Days 1 currentDate)
-                        
-                        _ ->
-                            Date.fromIsoString token
-                
-                beforeDate dateStr =
-                    case TaskItem.due taskItem of
-                        Nothing -> False
-                        Just itemDate ->
-                            case parseDateToken dateStr of
-                                Ok date -> Date.compare itemDate date == LT
-                                Err _ -> False
+                    beforeDate dateStr =
+                        case TaskItem.due taskItem of
+                            Nothing -> False
+                            Just itemDate ->
+                                case parseDateToken dateStr of
+                                    Ok date -> Date.compare itemDate date == LT
+                                    Err _ -> False
                                 
-                byDate dateStr =
-                    case TaskItem.due taskItem of
-                        Nothing -> False
-                        Just itemDate ->
-                            case parseDateToken dateStr of
-                                Ok date -> Date.compare itemDate date == LT || Date.compare itemDate date == EQ
-                                Err _ -> False
+                    byDate dateStr =
+                        case TaskItem.due taskItem of
+                            Nothing -> False
+                            Just itemDate ->
+                                case parseDateToken dateStr of
+                                    Ok date -> Date.compare itemDate date == LT || Date.compare itemDate date == EQ
+                                    Err _ -> False
                                 
-                onDate dateStr =
-                    case TaskItem.due taskItem of
-                        Nothing -> False
-                        Just itemDate ->
-                            case parseDateToken dateStr of
-                                Ok date -> Date.compare itemDate date == EQ
-                                Err _ -> False
+                    onDate dateStr =
+                        case TaskItem.due taskItem of
+                            Nothing -> False
+                            Just itemDate ->
+                                case parseDateToken dateStr of
+                                    Ok date -> Date.compare itemDate date == EQ
+                                    Err _ -> False
                 
-                fromDate dateStr =
-                    case TaskItem.due taskItem of
-                        Nothing -> False
-                        Just itemDate ->
-                            case parseDateToken dateStr of
-                                Ok date -> Date.compare itemDate date == GT || Date.compare itemDate date == EQ
-                                Err _ -> False
+                    fromDate dateStr =
+                        case TaskItem.due taskItem of
+                            Nothing -> False
+                            Just itemDate ->
+                                case parseDateToken dateStr of
+                                    Ok date -> Date.compare itemDate date == GT || Date.compare itemDate date == EQ
+                                    Err _ -> False
         
-                afterDate dateStr =
-                    case TaskItem.due taskItem of
-                        Nothing -> False
-                        Just itemDate ->
-                            case parseDateToken dateStr of
-                                Ok date -> Date.compare itemDate date == GT
-                                Err _ -> False
+                    afterDate dateStr =
+                        case TaskItem.due taskItem of
+                            Nothing -> False
+                            Just itemDate ->
+                                case parseDateToken dateStr of
+                                    Ok date -> Date.compare itemDate date == GT
+                                    Err _ -> False
         
-                isCompleted =
-                    TaskItem.isCompleted taskItem
+                    isCompleted =
+                        TaskItem.isCompleted taskItem
         
-                containsText : String -> String -> Bool
-                containsText searchStr text =
-                    String.contains searchStr text
+                    containsText : String -> String -> Bool
+                    containsText searchStr text =
+                        String.contains searchStr text
         
-                containsInTags : String -> Bool
-                containsInTags searchStr =
-                    List.any (String.contains searchStr) (TagList.toStrings (TaskItem.tags taskItem))
+                    containsInTags : String -> Bool
+                    containsInTags searchStr =
+                        List.any (String.contains searchStr) (TagList.toStrings (TaskItem.tags taskItem))
         
-                getFilename : String -> String
-                getFilename path =
-                    path
-                        |> String.split "/"
-                        |> List.reverse
-                        |> List.head
-                        |> Maybe.withDefault path
+                    getFilename : String -> String
+                    getFilename path =
+                        path
+                            |> String.split "/"
+                            |> List.reverse
+                            |> List.head
+                            |> Maybe.withDefault path
                         
-                -- Parse expression with C operator precedence
-                parseExpr : List String -> ( Bool, List String )
-                parseExpr tokens =
-                    parseOr tokens
+                    -- Parse expression with C operator precedence
+                    parseExpr : List String -> ( Bool, List String )
+                    parseExpr tokens =
+                        parseOr tokens
         
-                -- Parse OR expressions
-                parseOr : List String -> ( Bool, List String )
-                parseOr tokens =
-                    let
-                        ( leftResult, rest1 ) = parseAnd tokens
-                    in
-                    case rest1 of
-                        "or" :: rest2 ->
-                            let
-                                ( rightResult, rest3 ) = parseOr rest2
-                            in
-                            ( leftResult || rightResult, rest3 )
-                        _ ->
-                            ( leftResult, rest1 )
+                    -- Parse OR expressions
+                    parseOr : List String -> ( Bool, List String )
+                    parseOr tokens =
+                        let
+                            ( leftResult, rest1 ) = parseAnd tokens
+                        in
+                        case rest1 of
+                            "or" :: rest2 ->
+                                let
+                                    ( rightResult, rest3 ) = parseOr rest2
+                                in
+                                ( leftResult || rightResult, rest3 )
+                            _ ->
+                                ( leftResult, rest1 )
         
-                -- Parse AND expressions
-                parseAnd : List String -> ( Bool, List String )
-                parseAnd tokens =
-                    let
-                        ( leftResult, rest1 ) = parseNot tokens
-                    in
-                    case rest1 of
-                        "and" :: rest2 ->
-                            let
-                                ( rightResult, rest3 ) = parseAnd rest2
-                            in
-                            ( leftResult && rightResult, rest3 )
-                        _ ->
-                            ( leftResult, rest1 )
+                    -- Parse AND expressions
+                    parseAnd : List String -> ( Bool, List String )
+                    parseAnd tokens =
+                        let
+                            ( leftResult, rest1 ) = parseNot tokens
+                        in
+                        case rest1 of
+                            "and" :: rest2 ->
+                                let
+                                    ( rightResult, rest3 ) = parseAnd rest2
+                                in
+                                ( leftResult && rightResult, rest3 )
+                            _ ->
+                                ( leftResult, rest1 )
         
-                -- Parse NOT expressions
-                parseNot : List String -> ( Bool, List String )
-                parseNot tokens =
-                    case tokens of
-                        "not" :: rest ->
-                            let
-                                ( result, remaining ) = parseNot rest
-                            in
-                            ( not result, remaining )
-                        _ ->
-                            parseTerm tokens
+                    -- Parse NOT expressions
+                    parseNot : List String -> ( Bool, List String )
+                    parseNot tokens =
+                        case tokens of
+                            "not" :: rest ->
+                                let
+                                    ( result, remaining ) = parseNot rest
+                                in
+                                ( not result, remaining )
+                            _ ->
+                                parseTerm tokens
         
-                -- Parse individual terms and parentheses
-                parseTerm : List String -> ( Bool, List String )
-                parseTerm tokens =
-                    case tokens of
-                        [] -> 
-                            ( False, [] )
-                            
-                        "(" :: rest ->
-                            let
-                                ( result, remaining ) = parseOr rest
-                            in
-                            case remaining of
-                                ")" :: rest2 -> ( result, rest2 )
-                                _ -> ( False, [] )  -- Unmatched parenthesis
+                    -- Parse individual terms and parentheses
+                    parseTerm : List String -> ( Bool, List String )
+                    parseTerm tokens =
+                        case tokens of
+                            [] -> 
+                                ( False, [] )
                                 
-                        "before" :: date :: rest ->
-                            ( beforeDate date, rest )
+                            "(" :: rest ->
+                                let
+                                    ( result, remaining ) = parseOr rest
+                                in
+                                case remaining of
+                                    ")" :: rest2 -> ( result, rest2 )
+                                    _ -> ( False, [] )  -- Unmatched parenthesis
+                                
+                            "before" :: date :: rest ->
+                                ( beforeDate date, rest )
                         
-                        "by" :: date :: rest ->
-                            ( byDate date, rest )
+                            "by" :: date :: rest ->
+                                ( byDate date, rest )
                             
-                        "on" :: date :: rest ->
-                            ( onDate date, rest )
+                            "on" :: date :: rest ->
+                                ( onDate date, rest )
                             
-                        "from" :: date :: rest ->
-                            ( fromDate date, rest )
+                            "from" :: date :: rest ->
+                                ( fromDate date, rest )
                             
-                        "after" :: date :: rest ->
-                            ( afterDate date, rest )
+                            "after" :: date :: rest ->
+                                ( afterDate date, rest )
                             
-                        "completed" :: rest ->
-                            ( isCompleted, rest )
+                            "completed" :: rest ->
+                                ( isCompleted, rest )
                             
-                        "contents" :: "contains" :: searchStr :: rest ->
-                            ( containsText searchStr (TaskItem.originalLine taskItem), rest )
+                            "contents" :: "contains" :: searchStr :: rest ->
+                                ( containsText searchStr (TaskItem.originalLine taskItem), rest )
         
-                        "title" :: "contains" :: searchStr :: rest ->
-                            ( containsText searchStr (TaskItem.title taskItem), rest )
+                            "title" :: "contains" :: searchStr :: rest ->
+                                ( containsText searchStr (TaskItem.title taskItem), rest )
         
-                        "tags" :: "contains" :: searchStr :: rest ->
-                            ( containsInTags searchStr, rest )
+                            "tags" :: "contains" :: searchStr :: rest ->
+                                ( containsInTags searchStr, rest )
         
-                        "notes" :: "contains" :: searchStr :: rest ->
-                            ( containsText searchStr (TaskItem.notes taskItem), rest )
+                            "notes" :: "contains" :: searchStr :: rest ->
+                                ( containsText searchStr (TaskItem.notes taskItem), rest )
         
-                        "path" :: "contains" :: searchStr :: rest ->
-                            ( containsText searchStr (TaskItem.filePath taskItem), rest )
+                            "path" :: "contains" :: searchStr :: rest ->
+                                ( containsText searchStr (TaskItem.filePath taskItem), rest )
         
-                        "filename" :: "contains" :: searchStr :: rest ->
-                            ( containsText searchStr (getFilename (TaskItem.filePath taskItem)), rest )
+                            "filename" :: "contains" :: searchStr :: rest ->
+                                ( containsText searchStr (getFilename (TaskItem.filePath taskItem)), rest )
         
-                        "contains" :: searchStr :: rest ->
-                            ( containsText searchStr (TaskItem.originalLine taskItem), rest )
+                            "contains" :: searchStr :: rest ->
+                                ( containsText searchStr (TaskItem.originalLine taskItem), rest )
         
-                        token :: rest ->
-                            if String.startsWith "#" token then
-                                ( hasTag token, rest )
-                            else
-                                ( False, [] )  -- Invalid token
-            in
-            case parseOr tokenized of
-                ( result, [] ) -> result
-                ( _, _ ) -> False  -- Invalid expression or extra tokens
+                            token :: rest ->
+                                if String.startsWith "#" token then
+                                    ( hasTag token, rest )
+                                else
+                                    ( False, [] )  -- Invalid token
+                in
+                    case parseExpr tokenized of
+                        ( result, [] ) -> result
+                        ( _, _ ) -> False  -- Invalid expression or extra tokens
+        in
+        -- Return the filter function that uses the pre-computed tokens
+        evaluateFilter
